@@ -3,65 +3,54 @@ const EMAILJS_TEMPLATE_CEO = 'template_3cu8cqd';
 const EMAILJS_PUBLIC_KEY   = 'Dk9mXiwX5YIuVzs78';
 const RH_EMAIL = 'rh.prosaudejp@gmail.com';
 const BASE_URL = window.location.origin;
-const JSONBIN_MASTER_KEY = 'a$10$/.yUPbxEBYmJT42PBt.jZuxB/eQj.XaMUkLHkqOh/jCrj6WTGZbcO';
-const JSONBIN_BIN_NAME = 'prosaudejp-requisicoes';
+const JKEY = '$2a$10$/.yUPbxEBYmJT42PBt.jZuxB/eQj.XaMUkLHkqOh/jCrj6WTGZbcO';
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 let tipoSel = '', urgSel = '';
 document.getElementById('f-data').valueAsDate = new Date();
 
-// Obter ou criar BIN ID
 async function getBinId() {
-  let binId = localStorage.getItem('jsonbin_id');
+  let binId = localStorage.getItem('jbin_prosaudejp');
   if (binId) return binId;
-  // Criar novo bin
-  const resp = await fetch('https://api.jsonbin.io/v3/b', {
+  const r = await fetch('https://api.jsonbin.io/v3/b', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Master-Key': JSONBIN_MASTER_KEY,
-      'X-Bin-Name': JSONBIN_BIN_NAME,
-      'X-Bin-Private': 'true'
-    },
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JKEY, 'X-Bin-Name': 'prosaudejp', 'X-Bin-Private': 'false' },
     body: JSON.stringify({})
   });
-  const data = await resp.json();
-  binId = data.metadata.id;
-  localStorage.setItem('jsonbin_id', binId);
+  const d = await r.json();
+  if (!d.metadata || !d.metadata.id) throw new Error('Falha ao criar bin: ' + JSON.stringify(d));
+  binId = d.metadata.id;
+  localStorage.setItem('jbin_prosaudejp', binId);
   return binId;
 }
 
-async function salvarNaNuvem(dados) {
+async function salvarReq(dados) {
   const binId = await getBinId();
-  const getResp = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', {
-    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-  });
-  const atual = await getResp.json();
-  const requisicoes = atual.record || {};
-  requisicoes[dados.req] = dados;
+  const gr = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', { headers: { 'X-Master-Key': JKEY } });
+  const gd = await gr.json();
+  const reqs = gd.record || {};
+  reqs[dados.req] = dados;
   await fetch('https://api.jsonbin.io/v3/b/' + binId, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_MASTER_KEY },
-    body: JSON.stringify(requisicoes)
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JKEY },
+    body: JSON.stringify(reqs)
   });
   return binId;
 }
 
 function selTipo(btn) {
   document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  tipoSel = btn.dataset.t;
-  document.getElementById('tipo-outro-wrap').style.display = tipoSel === 'Outro' ? 'block' : 'none';
+  btn.classList.add('on'); tipoSel = btn.dataset.t;
+  document.getElementById('tipo-outro-wrap').style.display = tipoSel==='Outro'?'block':'none';
 }
 function selUrg(btn, n) {
   document.querySelectorAll('.ubtn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  urgSel = n;
+  btn.classList.add('on'); urgSel = n;
 }
 function cc(el, id) { document.getElementById(id).textContent = el.value.length; }
 function fmtSal(el) {
-  let v = el.value.replace(/\D/g, '');
-  if (!v) { el.value = ''; return; }
+  let v = el.value.replace(/\D/g,'');
+  if (!v) { el.value=''; return; }
   el.value = (parseInt(v)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 function g(id) { return document.getElementById(id).value.trim(); }
@@ -71,8 +60,7 @@ async function enviarRequisicao() {
   let ok = true;
   obrig.forEach(id => {
     const el = document.getElementById(id);
-    if (!el.value.trim()) { el.classList.add('err'); ok = false; }
-    else el.classList.remove('err');
+    if (!el.value.trim()) { el.classList.add('err'); ok=false; } else el.classList.remove('err');
   });
   if (!tipoSel) { alert('Selecione o tipo de movimentação.'); return; }
   if (!urgSel)  { alert('Selecione o nível de urgência.'); return; }
@@ -82,55 +70,53 @@ async function enviarRequisicao() {
   btn.disabled = true;
   btn.innerHTML = '<i class="ti ti-loader"></i> Enviando...';
 
-  const num = 'REQ-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000);
-  const urgMap = { baixa:'Baixa', media:'Média', alta:'Alta' };
+  const num = 'REQ-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*9000)+1000);
+  const urgMap = {baixa:'Baixa',media:'Média',alta:'Alta'};
   const dados = {
-    req: num, nome: g('f-nome'), mat: g('f-mat'), cargo: g('f-cargo'),
-    depto: g('f-depto'), email: g('f-email'),
-    data: g('f-data') || new Date().toLocaleDateString('pt-BR'), cc: g('f-cc'),
-    tipo: tipoSel==='Outro' ? g('f-tipo-outro')||'Outro' : tipoSel,
-    colNome: g('f-col-nome'), colMat: g('f-col-mat'),
-    colCargo: g('f-col-cargo'), colNovo: g('f-col-novo'),
-    salAt: g('f-sal-at'), salNv: g('f-sal-nv'),
-    dataMov: g('f-data-mov'), urg: urgMap[urgSel],
-    just: g('f-just'), imp: g('f-imp'), obs: g('f-obs'),
-    ceoEmail: g('f-ceo-email'), status: 'pendente',
-    criadoEm: new Date().toISOString()
+    req:num, nome:g('f-nome'), mat:g('f-mat'), cargo:g('f-cargo'),
+    depto:g('f-depto'), email:g('f-email'),
+    data:g('f-data')||new Date().toLocaleDateString('pt-BR'), cc:g('f-cc'),
+    tipo:tipoSel==='Outro'?g('f-tipo-outro')||'Outro':tipoSel,
+    colNome:g('f-col-nome'), colMat:g('f-col-mat'),
+    colCargo:g('f-col-cargo'), colNovo:g('f-col-novo'),
+    salAt:g('f-sal-at'), salNv:g('f-sal-nv'),
+    dataMov:g('f-data-mov'), urg:urgMap[urgSel],
+    just:g('f-just'), imp:g('f-imp'), obs:g('f-obs'),
+    ceoEmail:g('f-ceo-email'), status:'pendente',
+    criadoEm:new Date().toISOString()
   };
 
   try {
-    const binId = await salvarNaNuvem(dados);
-    // Gravar binId no link para o CEO conseguir acessar
-    const linkAprovacao = BASE_URL + '/aprovacao.html?req=' + encodeURIComponent(num) + '&bin=' + binId;
+    const binId = await salvarReq(dados);
+    const link = BASE_URL+'/aprovacao.html?req='+encodeURIComponent(num)+'&bin='+binId;
 
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CEO, {
-      to_email: dados.ceoEmail, to_name: 'CEO', req_num: num,
-      solicitante: dados.nome, cargo_depto: dados.cargo+' / '+dados.depto,
-      colaborador: dados.colNome, tipo: dados.tipo, urgencia: dados.urg,
-      data_mov: dados.dataMov||'—', justificativa: dados.just,
-      link_aprovacao: linkAprovacao, rh_email: RH_EMAIL,
+      to_email:dados.ceoEmail, to_name:'CEO', req_num:num,
+      solicitante:dados.nome, cargo_depto:dados.cargo+' / '+dados.depto,
+      colaborador:dados.colNome, tipo:dados.tipo, urgencia:dados.urg,
+      data_mov:dados.dataMov||'—', justificativa:dados.just,
+      link_aprovacao:link, rh_email:RH_EMAIL,
     });
 
-    document.getElementById('link-url-text').textContent = linkAprovacao;
+    document.getElementById('link-url-text').textContent = link;
     document.getElementById('req-num-tag').textContent = num;
     document.getElementById('form-main').style.display = 'none';
     document.getElementById('form-success').style.display = 'block';
     window.scrollTo(0,0);
   } catch(err) {
-    console.error('Erro:', err);
+    console.error(err);
     alert('Erro ao enviar: ' + (err.text||err.message||JSON.stringify(err)));
   }
-
-  btn.disabled = false;
-  btn.innerHTML = '<i class="ti ti-send"></i> Enviar requisição ao CEO';
+  btn.disabled=false;
+  btn.innerHTML='<i class="ti ti-send"></i> Enviar requisição ao CEO';
 }
 
 function copiarLink() {
   const t = document.getElementById('link-url-text').textContent;
   navigator.clipboard.writeText(t).then(() => {
     const btn = document.querySelector('.copy-btn');
-    btn.innerHTML = '<i class="ti ti-check"></i> Copiado!';
-    setTimeout(() => { btn.innerHTML = '<i class="ti ti-copy"></i> Copiar'; }, 2000);
+    btn.innerHTML='<i class="ti ti-check"></i> Copiado!';
+    setTimeout(()=>{btn.innerHTML='<i class="ti ti-copy"></i> Copiar';},2000);
   });
 }
 
