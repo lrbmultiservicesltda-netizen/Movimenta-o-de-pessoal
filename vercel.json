@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/aprovacao", "destination": "/aprovacao.html" },
+    { "source": "/aprovacao/(.*)", "destination": "/aprovacao.html" }
+  ]
+}

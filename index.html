@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movimentação de Pessoal — Pro Saúde JP</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo"><i class="ti ti-heart-plus"></i></div>
+  <div>
+    <h1>Pro Saúde JP — RH</h1>
+    <p>Sistema de Movimentação de Pessoal</p>
+  </div>
+</div>
+
+<div class="page">
+
+  <div id="form-main">
+
+    <div class="card">
+      <div class="sec-label"><i class="ti ti-user"></i> Dados do solicitante</div>
+      <div class="g2">
+        <div class="field"><label>Nome completo <span class="req">*</span></label><input type="text" id="f-nome" placeholder="Seu nome completo"></div>
+        <div class="field"><label>Matrícula</label><input type="text" id="f-mat" placeholder="Ex: 00123"></div>
+        <div class="field"><label>Cargo <span class="req">*</span></label><input type="text" id="f-cargo" placeholder="Seu cargo atual"></div>
+        <div class="field"><label>Departamento <span class="req">*</span></label><input type="text" id="f-depto" placeholder="Ex: RH, Financeiro"></div>
+        <div class="field full"><label>E-mail do solicitante <span class="req">*</span></label><input type="email" id="f-email" placeholder="seu.email@empresa.com.br"><span class="field-hint">Você receberá a resposta do CEO neste e-mail.</span></div>
+        <div class="field"><label>Data da solicitação</label><input type="date" id="f-data"></div>
+        <div class="field"><label>Centro de custo</label><input type="text" id="f-cc" placeholder="Ex: CC-001"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label"><i class="ti ti-arrows-exchange"></i> Tipo de movimentação <span class="req">*</span></div>
+      <div class="tipos">
+        <button class="tbtn" data-t="Promoção" onclick="selTipo(this)"><i class="ti ti-trending-up"></i> Promoção</button>
+        <button class="tbtn" data-t="Transferência" onclick="selTipo(this)"><i class="ti ti-transfer"></i> Transferência</button>
+        <button class="tbtn" data-t="Remanejamento" onclick="selTipo(this)"><i class="ti ti-arrows-diff"></i> Remanejamento</button>
+        <button class="tbtn" data-t="Mudança de cargo" onclick="selTipo(this)"><i class="ti ti-briefcase"></i> Mudança de cargo</button>
+        <button class="tbtn" data-t="Alteração salarial" onclick="selTipo(this)"><i class="ti ti-currency-dollar"></i> Alt. salarial</button>
+        <button class="tbtn" data-t="Desligamento" onclick="selTipo(this)"><i class="ti ti-user-minus"></i> Desligamento</button>
+        <button class="tbtn" data-t="Contratação" onclick="selTipo(this)"><i class="ti ti-user-plus"></i> Contratação</button>
+        <button class="tbtn" data-t="Outro" onclick="selTipo(this)"><i class="ti ti-dots"></i> Outro</button>
+      </div>
+      <div id="tipo-outro-wrap" style="margin-top:10px;display:none">
+        <input type="text" id="f-tipo-outro" placeholder="Especifique o tipo de movimentação">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label"><i class="ti ti-id-badge"></i> Colaborador envolvido</div>
+      <div class="g2">
+        <div class="field"><label>Nome do colaborador <span class="req">*</span></label><input type="text" id="f-col-nome" placeholder="Nome completo"></div>
+        <div class="field"><label>Matrícula</label><input type="text" id="f-col-mat" placeholder="Ex: 00456"></div>
+        <div class="field"><label>Cargo atual</label><input type="text" id="f-col-cargo" placeholder="Cargo que ocupa hoje"></div>
+        <div class="field"><label>Cargo / situação pretendida</label><input type="text" id="f-col-novo" placeholder="Após a movimentação"></div>
+        <div class="field"><label>Salário atual (R$)</label><input type="text" id="f-sal-at" placeholder="Ex: 4.500,00" oninput="fmtSal(this)"></div>
+        <div class="field"><label>Salário proposto (R$)</label><input type="text" id="f-sal-nv" placeholder="Ex: 5.000,00" oninput="fmtSal(this)"></div>
+        <div class="field full"><label>Data prevista <span class="req">*</span></label><input type="date" id="f-data-mov"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label"><i class="ti ti-file-description"></i> Justificativa e detalhes</div>
+      <div class="field">
+        <label>Justificativa <span class="req">*</span></label>
+        <textarea id="f-just" maxlength="700" placeholder="Descreva os motivos, contexto e benefícios esperados..." oninput="cc(this,'cc1')"></textarea>
+        <div class="char-count"><span id="cc1">0</span>/700</div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label>Impacto na equipe / operação</label>
+        <textarea id="f-imp" maxlength="350" placeholder="Como essa movimentação afeta a equipe..." oninput="cc(this,'cc2')"></textarea>
+        <div class="char-count"><span id="cc2">0</span>/350</div>
+      </div>
+      <div class="divider"></div>
+      <div class="field">
+        <label>Nível de urgência <span class="req">*</span></label>
+        <div class="urgrow" style="margin-top:6px">
+          <button class="ubtn baixa" onclick="selUrg(this,'baixa')"><i class="ti ti-circle-check"></i> Baixa</button>
+          <button class="ubtn media" onclick="selUrg(this,'media')"><i class="ti ti-alert-triangle"></i> Média</button>
+          <button class="ubtn alta"  onclick="selUrg(this,'alta')"><i class="ti ti-alert-circle"></i> Alta</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label"><i class="ti ti-send"></i> Envio para aprovação</div>
+      <div class="info-box">
+        <i class="ti ti-info-circle" style="color:#185FA5;font-size:18px;flex-shrink:0;margin-top:1px"></i>
+        <p>Ao enviar, um <strong>link exclusivo</strong> será gerado e o CEO receberá um e-mail para aprovar ou reprovar. O RH (<strong>rh.prosaudejp@gmail.com</strong>) será copiado automaticamente na resposta.</p>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label>Observações adicionais para o CEO</label>
+        <textarea id="f-obs" maxlength="300" placeholder="Informações complementares..." oninput="cc(this,'cc3')"></textarea>
+        <div class="char-count"><span id="cc3">0</span>/300</div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label>E-mail do CEO <span class="req">*</span></label>
+        <input type="email" id="f-ceo-email" placeholder="ceo@empresa.com.br">
+        <span class="field-hint">O link de aprovação será enviado para este e-mail.</span>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="btn-enviar" onclick="enviarRequisicao()">
+      <i class="ti ti-send"></i> Enviar requisição ao CEO
+    </button>
+    <button class="btn-ghost" onclick="limpar()">Limpar formulário</button>
+
+  </div>
+
+  <!-- SUCESSO -->
+  <div id="form-success" style="display:none">
+    <div class="success-card">
+      <i class="ti ti-circle-check big"></i>
+      <h2>Requisição enviada com sucesso!</h2>
+      <p>O CEO receberá um e-mail com o link de aprovação. O RH será notificado assim que ele responder.</p>
+      <div class="req-tag" id="req-num-tag">REQ-2026-0000</div>
+    </div>
+    <div class="card">
+      <div class="sec-label"><i class="ti ti-link"></i> Link de aprovação gerado</div>
+      <div class="link-box">
+        <p><i class="ti ti-external-link"></i> Link exclusivo desta requisição (enviado ao CEO):</p>
+        <div class="link-row">
+          <span class="link-url" id="link-url-text">—</span>
+          <button class="copy-btn" onclick="copiarLink()"><i class="ti ti-copy"></i> Copiar</button>
+        </div>
+      </div>
+      <div class="hint"><i class="ti ti-mail"></i> E-mail enviado ao CEO e ao RH (rh.prosaudejp@gmail.com).</div>
+    </div>
+    <button class="btn-ghost" onclick="novaReq()"><i class="ti ti-plus"></i> Nova requisição</button>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

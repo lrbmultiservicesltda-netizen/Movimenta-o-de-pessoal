@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aprovação de Requisição — Pro Saúde JP</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo" style="background:#FAEEDA"><i class="ti ti-user-check" style="color:#854F0B"></i></div>
+  <div>
+    <h1>Pro Saúde JP — Painel do CEO</h1>
+    <p>Aprovação de Movimentação de Pessoal</p>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- CARREGANDO -->
+  <div id="loading" style="text-align:center;padding:60px 20px;color:#8a8a8a">
+    <i class="ti ti-loader" style="font-size:36px;display:block;margin-bottom:12px"></i>
+    <p>Carregando requisição...</p>
+  </div>
+
+  <!-- ERRO -->
+  <div id="erro" style="display:none;text-align:center;padding:60px 20px">
+    <div class="card" style="max-width:440px;margin:0 auto;text-align:center;padding:36px">
+      <i class="ti ti-alert-circle" style="font-size:44px;color:#A32D2D;display:block;margin-bottom:12px"></i>
+      <h2 style="font-size:18px;margin-bottom:8px;color:#1a1a1a">Requisição não encontrada</h2>
+      <p style="font-size:13px;color:#5a5a5a">Este link é inválido ou a requisição já foi respondida.</p>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div id="conteudo" style="display:none">
+
+    <div class="ceo-header">
+      <div class="ceo-icon"><i class="ti ti-user-check"></i></div>
+      <div>
+        <h2>Solicitação aguardando sua decisão</h2>
+        <p>Revise as informações abaixo e registre sua aprovação ou reprovação.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div class="sec-label" style="margin-bottom:0"><i class="ti ti-file-text"></i> Identificação da requisição</div>
+        <span class="badge badge-pend"><i class="ti ti-clock"></i> Aguardando decisão</span>
+      </div>
+      <div class="info-row"><span class="info-lbl">Número</span><span class="info-val" id="cv-req">—</span></div>
+      <div class="info-row"><span class="info-lbl">Solicitante</span><span class="info-val" id="cv-nome">—</span></div>
+      <div class="info-row"><span class="info-lbl">Cargo / Departamento</span><span class="info-val" id="cv-cargo-depto">—</span></div>
+      <div class="info-row"><span class="info-lbl">E-mail do solicitante</span><span class="info-val" id="cv-email">—</span></div>
+      <div class="info-row"><span class="info-lbl">Data da solicitação</span><span class="info-val" id="cv-data">—</span></div>
+      <div class="info-row"><span class="info-lbl">Centro de custo</span><span class="info-val" id="cv-cc">—</span></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label"><i class="ti ti-arrows-exchange"></i> Detalhes da movimentação</div>
+      <div class="info-row"><span class="info-lbl">Tipo</span><span class="info-val" id="cv-tipo">—</span></div>
+      <div class="info-row"><span class="info-lbl">Colaborador</span><span class="info-val" id="cv-col">—</span></div>
+      <div class="info-row"><span class="info-lbl">Cargo atual</span><span class="info-val" id="cv-cargo-at">—</span></div>
+      <div class="info-row"><span class="info-lbl">Cargo pretendido</span><span class="info-val" id="cv-cargo-nv">—</span></div>
+      <div class="info-row"><span class="info-lbl">Salário atual</span><span class="info-val" id="cv-sal-at">—</span></div>
+      <div class="info-row" id="cv-sal-nv-row"><span class="info-lbl">Salário proposto</span><span class="info-val" id="cv-sal-nv">—</span></div>
+      <div class="info-row"><span class="info-lbl">Data prevista</span><span class="info-val" id="cv-data-mov">—</span></div>
+      <div class="info-row"><span class="info-lbl">Urgência</span><span class="info-val" id="cv-urg">—</span></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-label"><i class="ti ti-file-description"></i> Justificativa</div>
+      <p id="cv-just" style="font-size:13px;line-height:1.7;color:#1a1a1a;margin-bottom:12px">—</p>
+      <div id="cv-imp-wrap">
+        <p style="font-size:11px;font-weight:600;color:#5a5a5a;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Impacto na equipe:</p>
+        <p id="cv-imp" style="font-size:13px;line-height:1.7;color:#1a1a1a">—</p>
+      </div>
+      <div id="cv-obs-wrap" style="margin-top:14px">
+        <p style="font-size:11px;font-weight:600;color:#5a5a5a;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Observações adicionais:</p>
+        <p id="cv-obs" style="font-size:13px;line-height:1.7;color:#1a1a1a">—</p>
+      </div>
+    </div>
+
+    <div class="card" id="card-decisao">
+      <div class="sec-label"><i class="ti ti-message-circle"></i> Sua decisão</div>
+      <div class="field">
+        <label>Comentário (opcional)</label>
+        <textarea id="ceo-comment" maxlength="500" placeholder="Adicione um comentário, justificativa ou condição para a decisão..." oninput="cc(this,'cc-ceo')"></textarea>
+        <div class="char-count"><span id="cc-ceo">0</span>/500</div>
+      </div>
+      <div class="action-row" style="margin-top:16px">
+        <button class="btn-aprov" onclick="decidir('aprovado')"><i class="ti ti-circle-check"></i> Aprovar</button>
+        <button class="btn-repr"  onclick="decidir('reprovado')"><i class="ti ti-circle-x"></i> Reprovar</button>
+      </div>
+      <div class="hint" style="margin-top:12px">
+        <i class="ti ti-mail"></i>
+        Sua decisão será enviada ao solicitante e ao RH (rh.prosaudejp@gmail.com) automaticamente.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RESULTADO -->
+  <div id="resultado" style="display:none">
+    <div id="result-box" class="result-wrap ok">
+      <i class="ti ti-circle-check big" id="result-icon"></i>
+      <h2 id="result-titulo">Decisão registrada</h2>
+      <p id="result-desc">—</p>
+      <p class="rh-note"><i class="ti ti-mail"></i> E-mails enviados ao solicitante e ao RH (rh.prosaudejp@gmail.com).</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="aprovacao.js"></script>
+</body>
+</html>
