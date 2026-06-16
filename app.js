@@ -76,7 +76,6 @@ async function enviarRequisicao() {
   try {
     await salvarReq(dados);
     const link = BASE_URL+'/aprovacao.html?req='+encodeURIComponent(num);
-
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CEO, {
       to_email:dados.ceoEmail, to_name:'CEO', req_num:num,
       solicitante:dados.nome, cargo_depto:dados.cargo+' / '+dados.depto,
@@ -84,7 +83,6 @@ async function enviarRequisicao() {
       data_mov:dados.dataMov||'—', justificativa:dados.just,
       link_aprovacao:link, rh_email:RH_EMAIL,
     });
-
     document.getElementById('link-url-text').textContent = link;
     document.getElementById('req-num-tag').textContent = num;
     document.getElementById('form-main').style.display = 'none';
