@@ -3,39 +3,26 @@ const EMAILJS_TEMPLATE_CEO = 'template_3cu8cqd';
 const EMAILJS_PUBLIC_KEY   = 'Dk9mXiwX5YIuVzs78';
 const RH_EMAIL = 'rh.prosaudejp@gmail.com';
 const BASE_URL = window.location.origin;
-const JKEY = '$2a$10$/.yUPbxEBYmJT42PBt.jZuxB/eQj.XaMUkLHkqOh/jCrj6WTGZbcO';
+const JKEY   = '$2a$10$/.yUPbxEBYmJT42PBt.jZuxB/eQj.XaMUkLHkqOh/jCrj6WTGZbcO';
+const BIN_ID = '6a30b426da38895dfec731e4';
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 let tipoSel = '', urgSel = '';
 document.getElementById('f-data').valueAsDate = new Date();
 
-async function getBinId() {
-  let binId = localStorage.getItem('jbin_prosaudejp');
-  if (binId) return binId;
-  const r = await fetch('https://api.jsonbin.io/v3/b', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JKEY, 'X-Bin-Name': 'prosaudejp', 'X-Bin-Private': 'false' },
-    body: JSON.stringify({})
-  });
-  const d = await r.json();
-  if (!d.metadata || !d.metadata.id) throw new Error('Falha ao criar bin: ' + JSON.stringify(d));
-  binId = d.metadata.id;
-  localStorage.setItem('jbin_prosaudejp', binId);
-  return binId;
-}
-
 async function salvarReq(dados) {
-  const binId = await getBinId();
-  const gr = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', { headers: { 'X-Master-Key': JKEY } });
+  const gr = await fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
+    headers: { 'X-Master-Key': JKEY }
+  });
   const gd = await gr.json();
   const reqs = gd.record || {};
   reqs[dados.req] = dados;
-  await fetch('https://api.jsonbin.io/v3/b/' + binId, {
+  const pr = await fetch('https://api.jsonbin.io/v3/b/' + BIN_ID, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'X-Master-Key': JKEY },
     body: JSON.stringify(reqs)
   });
-  return binId;
+  if (!pr.ok) throw new Error('Erro ao salvar: ' + pr.status);
 }
 
 function selTipo(btn) {
@@ -87,8 +74,8 @@ async function enviarRequisicao() {
   };
 
   try {
-    const binId = await salvarReq(dados);
-    const link = BASE_URL+'/aprovacao.html?req='+encodeURIComponent(num)+'&bin='+binId;
+    await salvarReq(dados);
+    const link = BASE_URL+'/aprovacao.html?req='+encodeURIComponent(num);
 
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CEO, {
       to_email:dados.ceoEmail, to_name:'CEO', req_num:num,
