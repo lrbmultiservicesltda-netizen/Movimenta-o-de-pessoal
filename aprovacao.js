@@ -71,6 +71,18 @@ function renderizar(d) {
   document.getElementById('cv-obs-wrap').style.display = d.obs?'block':'none';
 }
 
+function gerarAcaoRH(isAprov, dados) {
+  if (isAprov) {
+    return 'A requisição foi APROVADA. Por favor, providencie a execução da movimentação de "'
+      + dados.tipo + '" para o colaborador ' + dados.colNome
+      + ' (cargo atual: ' + (dados.colCargo || 'não informado')
+      + (dados.colNovo ? ', novo cargo/situação: ' + dados.colNovo : '') + ')'
+      + (dados.dataMov ? ', com data prevista para ' + dados.dataMov : '')
+      + '. Atualize o sistema de RH, folha de pagamento e demais cadastros necessários. Comunique o solicitante e o colaborador sobre a aprovação.';
+  }
+  return 'A requisição foi REPROVADA pelo CEO. Nenhuma ação de movimentação deve ser executada. Recomenda-se arquivar esta solicitação e comunicar formalmente o solicitante sobre a reprovação, incluindo o comentário do CEO acima, se houver.';
+}
+
 async function decidir(decisao) {
   const comment = document.getElementById('ceo-comment').value.trim();
   const isAprov = decisao==='aprovado';
@@ -85,15 +97,27 @@ async function decidir(decisao) {
       status:decisao, comentarioCEO:comment,
       respondidoEm:new Date().toISOString()
     });
+
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_RESP, {
-      to_email:dadosReq.email, to_name:dadosReq.nome, rh_email:RH_EMAIL,
-      req_num:dadosReq.req,
-      decisao:isAprov?'APROVADA ✅':'REPROVADA ❌',
-      decisao_label:isAprov?'aprovada':'reprovada',
-      solicitante:dadosReq.nome, colaborador:dadosReq.colNome,
-      tipo:dadosReq.tipo, urgencia:dadosReq.urg,
-      comentario_ceo:comment||'Nenhum comentário registrado.',
-      data_decisao:new Date().toLocaleDateString('pt-BR'),
+      to_email:        dadosReq.email,
+      to_name:         dadosReq.nome,
+      rh_email:        RH_EMAIL,
+      req_num:         dadosReq.req,
+      decisao:         isAprov?'APROVADA':'REPROVADA',
+      decisao_label:   isAprov?'aprovada':'reprovada',
+      solicitante:     dadosReq.nome,
+      cargo_depto:     dadosReq.cargo + ' / ' + dadosReq.depto,
+      colaborador:     dadosReq.colNome,
+      cargo_atual:     dadosReq.colCargo || 'não informado',
+      cargo_pretendido:dadosReq.colNovo || 'não informado',
+      tipo:            dadosReq.tipo,
+      centro_custo:    dadosReq.cc || 'não informado',
+      data_mov:        dadosReq.dataMov || 'não informada',
+      urgencia:        dadosReq.urg,
+      justificativa:   dadosReq.just,
+      comentario_ceo:  comment || 'Nenhum comentário registrado.',
+      data_decisao:    new Date().toLocaleDateString('pt-BR'),
+      acao_rh:         gerarAcaoRH(isAprov, dadosReq),
     });
   } catch(e) { console.error('Erro:',e); }
 
