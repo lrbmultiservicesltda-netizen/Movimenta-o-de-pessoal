@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histórico de Requisições — Pro Saúde JP</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  .filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filtros select, .filtros input {
+    font-size: 13px; font-family: var(--font); color: var(--text);
+    background: #fafafa; border: 1px solid rgba(0,0,0,0.16);
+    border-radius: var(--radius-sm); padding: 8px 12px;
+  }
+  .filtros input { flex: 1; min-width: 180px; }
+  .lista-req { display: flex; flex-direction: column; gap: 10px; }
+  .req-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 18px;
+    display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .req-info { flex: 1; min-width: 200px; }
+  .req-info .top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+  .req-info .num { font-size: 13px; font-weight: 700; color: var(--text); }
+  .req-info .nome { font-size: 13px; color: var(--text-sec); }
+  .req-info .meta { font-size: 11px; color: var(--text-ter); }
+  .req-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-mini {
+    border: 1px solid rgba(0,0,0,0.14); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text-sec); font-size: 12px;
+    padding: 7px 12px; cursor: pointer; font-family: var(--font);
+    display: flex; align-items: center; gap: 5px; transition: background .15s;
+  }
+  .btn-mini:hover { background: var(--gray-100); }
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
+  .stat-box .num { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-box .lbl { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--text-ter); }
+  .empty-state i { font-size: 40px; margin-bottom: 10px; display: block; }
+
+  /* Modal de detalhe */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 999; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--surface); border-radius: var(--radius); max-width: 600px; width: 100%;
+    max-height: 85vh; overflow-y: auto; padding: 24px;
+  }
+  .modal-close { float: right; cursor: pointer; font-size: 20px; color: var(--text-ter); background:none; border:none; }
+  #print-area { display: none; }
+
+  @media print {
+    .topbar, .filtros, .stats-row, .req-actions, .modal-close, #btn-imprimir-lista { display: none !important; }
+    body { background: #fff; }
+    .modal-overlay { position: static; background: none; display: block !important; padding: 0; }
+    .modal-box { box-shadow: none; max-height: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo"><i class="ti ti-history"></i></div>
+  <div>
+    <h1>Pro Saúde JP — RH</h1>
+    <p>Histórico de Requisições de Movimentação</p>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="stats-row" id="stats-row"></div>
+
+  <div class="card">
+    <div class="filtros">
+      <input type="text" id="busca" placeholder="Buscar por nome, número ou colaborador..." oninput="renderLista()">
+      <select id="filtro-status" onchange="renderLista()">
+        <option value="">Todos os status</option>
+        <option value="pendente">Pendente</option>
+        <option value="aprovado">Aprovado</option>
+        <option value="reprovado">Reprovado</option>
+      </select>
+      <button class="btn-ghost" style="width:auto;margin:0" id="btn-recarregar" onclick="carregarDados()">
+        <i class="ti ti-refresh"></i> Atualizar
+      </button>
+    </div>
+  </div>
+
+  <div id="loading-state" style="text-align:center;padding:40px;color:var(--text-ter)">
+    <i class="ti ti-loader" style="font-size:30px;display:block;margin-bottom:10px"></i>
+    Carregando requisições...
+  </div>
+
+  <div id="lista-wrap" style="display:none">
+    <div class="lista-req" id="lista-req"></div>
+  </div>
+
+  <div id="empty-state" class="empty-state" style="display:none">
+    <i class="ti ti-file-off"></i>
+    <p>Nenhuma requisição encontrada.</p>
+  </div>
+
+</div>
+
+<!-- MODAL DE DETALHE / IMPRESSÃO -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box">
+    <button class="modal-close" onclick="fecharModal()">&times;</button>
+    <div id="modal-content"></div>
+    <button class="btn-primary" style="margin-top:16px" onclick="window.print()">
+      <i class="ti ti-printer"></i> Imprimir / Salvar PDF
+    </button>
+  </div>
+</div>
+
+<script>
+  const JKEY   = '$2a$10$/.yUPbxEBYmJT42PBt.jZuxB/eQj.XaMUkLHkqOh/jCrj6WTGZbcO';
+  const BIN_ID = '6a30b426da38895dfec731e4';
+
+  let todasReqs = {};
+
+  async function carregarDados() {
+    document.getElementById('loading-state').style.display = 'block';
+    document.getElementById('lista-wrap').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'none';
+    try {
+      const r = await fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
+        headers: { 'X-Master-Key': JKEY }
+      });
+      const d = await r.json();
+      todasReqs = d.record || {};
+      // Remove chave de teste vazia, se existir
+      delete todasReqs.requisicoes;
+      renderStats();
+      renderLista();
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao carregar dados: ' + e.message);
+    }
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('lista-wrap').style.display = 'block';
+  }
+
+  function renderStats() {
+    const vals = Object.values(todasReqs);
+    const total = vals.length;
+    const pend = vals.filter(r => r.status === 'pendente').length;
+    const aprov = vals.filter(r => r.status === 'aprovado').length;
+    const repr = vals.filter(r => r.status === 'reprovado').length;
+    document.getElementById('stats-row').innerHTML = `
+      <div class="stat-box"><div class="num">${total}</div><div class="lbl">Total</div></div>
+      <div class="stat-box"><div class="num" style="color:#854F0B">${pend}</div><div class="lbl">Pendentes</div></div>
+      <div class="stat-box"><div class="num" style="color:#3B6D11">${aprov}</div><div class="lbl">Aprovadas</div></div>
+      <div class="stat-box"><div class="num" style="color:#A32D2D">${repr}</div><div class="lbl">Reprovadas</div></div>
+    `;
+  }
+
+  function badgeStatus(status) {
+    const map = {
+      pendente: ['badge-pend', 'ti-clock', 'Pendente'],
+      aprovado: ['badge-aprov', 'ti-circle-check', 'Aprovado'],
+      reprovado: ['badge-repr', 'ti-circle-x', 'Reprovado']
+    };
+    const [cls, icon, label] = map[status] || map.pendente;
+    return `<span class="badge ${cls}"><i class="ti ${icon}"></i> ${label}</span>`;
+  }
+
+  function renderLista() {
+    const busca = document.getElementById('busca').value.toLowerCase();
+    const filtroStatus = document.getElementById('filtro-status').value;
+
+    let entries = Object.entries(todasReqs);
+    entries = entries.filter(([key, d]) => {
+      if (!d || !d.req) return false;
+      if (filtroStatus && d.status !== filtroStatus) return false;
+      if (busca) {
+        const alvo = (d.nome + ' ' + d.req + ' ' + d.colNome + ' ' + d.tipo).toLowerCase();
+        if (!alvo.includes(busca)) return false;
+      }
+      return true;
+    });
+
+    entries.sort((a, b) => new Date(b[1].criadoEm || 0) - new Date(a[1].criadoEm || 0));
+
+    const listaEl = document.getElementById('lista-req');
+    const emptyEl = document.getElementById('empty-state');
+
+    if (entries.length === 0) {
+      listaEl.innerHTML = '';
+      emptyEl.style.display = 'block';
+      return;
+    }
+    emptyEl.style.display = 'none';
+
+    listaEl.innerHTML = entries.map(([key, d]) => `
+      <div class="req-card">
+        <div class="req-info">
+          <div class="top">
+            <span class="num">${d.req}</span>
+            ${badgeStatus(d.status)}
+          </div>
+          <div class="nome">${d.nome || '—'} → ${d.colNome || '—'} (${d.tipo || '—'})</div>
+          <div class="meta">Criado em ${d.data || '—'}${d.respondidoEm ? ' · Respondido em ' + new Date(d.respondidoEm).toLocaleDateString('pt-BR') : ''}</div>
+        </div>
+        <div class="req-actions">
+          <button class="btn-mini" onclick="abrirDetalhe('${key}')"><i class="ti ti-eye"></i> Ver / Imprimir</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function abrirDetalhe(key) {
+    const d = todasReqs[key];
+    if (!d) return;
+    document.getElementById('modal-content').innerHTML = `
+      <div style="margin-bottom:16px">
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Requisição ${d.req}</h2>
+        ${badgeStatus(d.status)}
+      </div>
+      <div class="info-row"><span class="info-lbl">Solicitante</span><span class="info-val">${d.nome || '—'} ${d.mat ? '— Mat. ' + d.mat : ''}</span></div>
+      <div class="info-row"><span class="info-lbl">Cargo / Depto</span><span class="info-val">${d.cargo || '—'} / ${d.depto || '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">E-mail solicitante</span><span class="info-val">${d.email || '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Data da solicitação</span><span class="info-val">${d.data || '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Centro de custo</span><span class="info-val">${d.cc || '—'}</span></div>
+      <div class="divider"></div>
+      <div class="info-row"><span class="info-lbl">Tipo de movimentação</span><span class="info-val">${d.tipo || '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Colaborador</span><span class="info-val">${d.colNome || '—'} ${d.colMat ? '— Mat. ' + d.colMat : ''}</span></div>
+      <div class="info-row"><span class="info-lbl">Cargo atual</span><span class="info-val">${d.colCargo || '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Cargo pretendido</span><span class="info-val">${d.colNovo || '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Salário atual</span><span class="info-val">${d.salAt ? 'R$ ' + d.salAt : '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Salário proposto</span><span class="info-val">${d.salNv ? 'R$ ' + d.salNv : '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Data prevista</span><span class="info-val">${d.dataMov || '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Urgência</span><span class="info-val">${d.urg || '—'}</span></div>
+      <div class="divider"></div>
+      <p style="font-size:12px;font-weight:600;color:var(--text-sec);margin-bottom:4px">Justificativa</p>
+      <p style="font-size:13px;line-height:1.6;margin-bottom:12px">${d.just || '—'}</p>
+      ${d.imp ? `<p style="font-size:12px;font-weight:600;color:var(--text-sec);margin-bottom:4px">Impacto na equipe</p><p style="font-size:13px;line-height:1.6;margin-bottom:12px">${d.imp}</p>` : ''}
+      ${d.obs ? `<p style="font-size:12px;font-weight:600;color:var(--text-sec);margin-bottom:4px">Observações</p><p style="font-size:13px;line-height:1.6;margin-bottom:12px">${d.obs}</p>` : ''}
+      <div class="divider"></div>
+      <div class="info-row"><span class="info-lbl">Status</span><span class="info-val">${d.status || '—'}</span></div>
+      ${d.comentarioCEO ? `<div class="info-row"><span class="info-lbl">Comentário do CEO</span><span class="info-val">${d.comentarioCEO}</span></div>` : ''}
+      ${d.respondidoEm ? `<div class="info-row"><span class="info-lbl">Respondido em</span><span class="info-val">${new Date(d.respondidoEm).toLocaleString('pt-BR')}</span></div>` : ''}
+      <p style="font-size:11px;color:var(--text-ter);margin-top:16px">Pro Saúde JP — Documento gerado em ${new Date().toLocaleString('pt-BR')}</p>
+    `;
+    document.getElementById('modal-overlay').classList.add('show');
+  }
+
+  function fecharModal() {
+    document.getElementById('modal-overlay').classList.remove('show');
+  }
+
+  document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'modal-overlay') fecharModal();
+  });
+
+  carregarDados();
+</script>
+</body>
+</html>
